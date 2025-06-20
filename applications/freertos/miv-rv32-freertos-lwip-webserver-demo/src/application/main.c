@@ -35,6 +35,7 @@
 #include "lwip/dhcp.h"
 #include "lwip/ip4_addr.h"
 #include "lwip/tcpip.h"
+#include "../middleware/HTTPS/https_stub.h"
 
 const char *g_hello_msg = "\r\n/* Mi-V RV32 FreeRTOS LWIP Web Server Demo */\r\n";
 extern void configure_zl30364(void);
@@ -123,6 +124,7 @@ main(void)
 
     /* Create the web server task. */
     tcpip_init(prvEthernetConfigureInterface, NULL);
+    https_init();
 
     xTaskCreate(prvLinkRXTask, "LinkRX", 1024, NULL, uartPRIMARY_PRIORITY, NULL);
 
