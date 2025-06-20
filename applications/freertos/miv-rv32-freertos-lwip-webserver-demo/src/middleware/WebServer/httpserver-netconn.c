@@ -23,7 +23,7 @@
 
 #include "lwip/debug.h"
 #include "lwip/err.h"
-#include "../HTTPS/https_stub.h"
+#include "../HTTPS/https_tls.h"
 
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"

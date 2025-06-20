@@ -131,4 +131,4 @@ For further information on how to fully configure LwIP refer to the [LwIP wiki][
 
 This example is tested on PolarFire MPF300T device.
 
-**Note**: This demo has been modified to serve HTTPS on port 443 using a minimal encryption stub located in `src/middleware/HTTPS`. The stub performs a simple handshake and XOR based encryption to keep the binary size small.
+**Note**: This demo serves HTTPS on port 443 using the mbedTLS library. The TLS configuration is intentionally minimal to reduce code size while providing a working encrypted connection.

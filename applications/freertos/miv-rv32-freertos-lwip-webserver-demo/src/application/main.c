@@ -35,7 +35,7 @@
 #include "lwip/dhcp.h"
 #include "lwip/ip4_addr.h"
 #include "lwip/tcpip.h"
-#include "../middleware/HTTPS/https_stub.h"
+#include "../middleware/HTTPS/https_tls.h"
 
 const char *g_hello_msg = "\r\n/* Mi-V RV32 FreeRTOS LWIP Web Server Demo */\r\n";
 extern void configure_zl30364(void);
