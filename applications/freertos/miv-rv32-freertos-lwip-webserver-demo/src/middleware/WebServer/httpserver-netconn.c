@@ -23,6 +23,7 @@
 
 #include "lwip/debug.h"
 #include "lwip/err.h"
+#include "../HTTPS/https_tls.h"
 
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
@@ -86,11 +87,10 @@ http_server_netconn_serve(struct netconn *conn)
 
     /* Read the data from the port, blocking if nothing yet there.
     We assume the request (the part we care about) is in one netbuf */
-    err = netconn_recv(conn, &inbuf);
+    err = https_read(conn, &inbuf, (void **)&buf, &buflen);
 
     if (err == ERR_OK)
     {
-        netbuf_data(inbuf, (void **)&buf, &buflen);
 
         /* Is this an HTTP GET command? (only check the first 5 chars, since
         there are other formats for GET, and we're keeping it very simple )*/
@@ -414,19 +414,19 @@ http_server_netconn_serve(struct netconn *conn)
                  * subtract 1 from the size, since we dont send the \0 in the string
                  * NETCONN_NOCOPY: our data is const static, so no need to copy it
                  */
-                netconn_write(conn, http_json_hdr, sizeof(http_json_hdr) - 1, NETCONN_NOCOPY);
+                https_write(conn, http_json_hdr, sizeof(http_json_hdr) - 1);
 
                 /* Send our HTML page */
-                netconn_write(conn, status_json, json_resp_size - 1, NETCONN_NOCOPY);
+                https_write(conn, status_json, json_resp_size - 1);
             }
             else if (buf[5] == 'm')
             {
-                netconn_write(conn, microchip_logo, sizeof(microchip_logo) - 1, NETCONN_NOCOPY);
+                https_write(conn, microchip_logo, sizeof(microchip_logo) - 1);
             }
             else if (buf[5] == 'c')
             {
                 TSE_clear_statistics(g_tse);
-                netconn_write(conn, http_html_ok_hdr, sizeof(http_html_ok_hdr) - 1, NETCONN_NOCOPY);
+                https_write(conn, http_html_ok_hdr, sizeof(http_html_ok_hdr) - 1);
             }
             else
             {
@@ -434,30 +434,29 @@ http_server_netconn_serve(struct netconn *conn)
                  * subtract 1 from the size, since we dont send the \0 in the string
                  * NETCONN_NOCOPY: our data is const static, so no need to copy it
                  */
-                netconn_write(conn, http_html_hdr, sizeof(http_html_hdr) - 1, NETCONN_NOCOPY);
+                https_write(conn, http_html_hdr, sizeof(http_html_hdr) - 1);
 
                 /* Send our HTML page */
-                netconn_write(conn, http_index_html, sizeof(http_index_html) - 1, NETCONN_NOCOPY);
+                https_write(conn, http_index_html, sizeof(http_index_html) - 1);
             }
         }
         else if (buflen >= 6 && buf[0] == 'P' && buf[1] == 'O' && buf[2] == 'S' && buf[3] == 'T' &&
                  buf[4] == ' ' && buf[5] == '/')
         {
-            err = netconn_recv(conn, &inbuf);
-
+            err = https_read(conn, &inbuf, (void **)&buf, &buflen);
             ++err;
 
             /* Send the HTML header
              * subtract 1 from the size, since we dont send the \0 in the string
              * NETCONN_NOCOPY: our data is const static, so no need to copy it
              */
-            netconn_write(conn, http_post_resp_hdr, sizeof(http_post_resp_hdr) - 1, NETCONN_NOCOPY);
+            https_write(conn, http_post_resp_hdr, sizeof(http_post_resp_hdr) - 1);
         }
     }
     /* Close the connection (server closes in HTTP) */
     netconn_close(conn);
 
-    /* Delete the buffer (netconn_recv gives us ownership,
+    /* Delete the buffer (https_read gives us ownership,
       so we have to make sure to deallocate the buffer) */
     netbuf_delete(inbuf);
 }
@@ -480,8 +479,8 @@ http_server_netconn_thread(void *arg)
     conn = netconn_new(NETCONN_TCP);
     LWIP_ERROR("http_server: invalid conn", (conn != NULL), return;);
 
-    /* Bind to port 80 (HTTP) with default IP address */
-    netconn_bind(conn, IP_ADDR_ANY, 80);
+    /* Bind to port 443 (HTTPS) with default IP address */
+    netconn_bind(conn, IP_ADDR_ANY, 443);
 
     /* Put the connection into LISTEN state */
     netconn_listen(conn);
@@ -491,7 +490,10 @@ http_server_netconn_thread(void *arg)
         err = netconn_accept(conn, &newconn);
         if (err == ERR_OK)
         {
-            http_server_netconn_serve(newconn);
+            if (https_server_accept(newconn) == ERR_OK)
+            {
+                http_server_netconn_serve(newconn);
+            }
             netconn_delete(newconn);
         }
     } while (err == ERR_OK);

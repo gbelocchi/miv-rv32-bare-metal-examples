@@ -130,3 +130,5 @@ For further information on how to fully configure LwIP refer to the [LwIP wiki][
 ## Silicon Revision Dependencies
 
 This example is tested on PolarFire MPF300T device.
+
+**Note**: This demo serves HTTPS on port 443 using the mbedTLS library. The TLS configuration is intentionally minimal to reduce code size while providing a working encrypted connection.
